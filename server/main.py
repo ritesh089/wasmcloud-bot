@@ -14,9 +14,12 @@ from dotenv import load_dotenv
 
 from .database import get_db, init_database, check_database_connection, get_database_stats
 from .rag import ask_question
+from .advanced_rag import ask_question_advanced
 from .scraper import scrape_wasmcloud_docs
 from .models import Document, Chunk
 from .embeddings import chunk_document, generate_chunk_embedding
+from .ai_chunking import create_intelligent_chunks
+from .optimization_config import get_optimization_config
 
 load_dotenv()
 
@@ -161,7 +164,13 @@ def query_bot(
         
         logger.info(f"Processing query: {request.question[:100]}...")
         
-        result = ask_question(request.question, db)
+        # Use optimized RAG if enabled
+        config = get_optimization_config()
+        
+        if config.get_rag_strategy() == "advanced":
+            result = ask_question_advanced(request.question, db)
+        else:
+            result = ask_question(request.question, db)
         
         return QueryResponse(
             answer=result['answer'],
@@ -173,6 +182,34 @@ def query_bot(
     except Exception as e:
         logger.error(f"Error processing query: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
+
+
+@app.post("/query/advanced", response_model=QueryResponse)
+def query_bot_advanced(
+    request: QueryRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Ask a question using advanced AI-enhanced RAG with hybrid search and reranking.
+    """
+    try:
+        if not request.question.strip():
+            raise HTTPException(status_code=400, detail="Question cannot be empty")
+        
+        logger.info(f"Processing advanced query: {request.question[:100]}...")
+        
+        result = ask_question_advanced(request.question, db)
+        
+        return QueryResponse(
+            answer=result['answer'],
+            sources=result['sources'] if request.include_sources else [],
+            chunks_used=result['chunks_used'],
+            response_time=result['response_time']
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing advanced query: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing advanced query: {str(e)}")
 
 
 @app.post("/ingest", response_model=IngestResponse)
@@ -234,12 +271,20 @@ def ingest_documentation(db: Session = Depends(get_db)):
                 db.add(document)
                 db.flush()  # Get the document ID
                 
-                # Chunk the document
-                chunks_data = chunk_document(
-                    doc_data['content'],
-                    doc_data['title'],
-                    doc_data['url']
-                )
+                # Chunk the document using intelligent chunking if enabled
+                config = get_optimization_config()
+                if config.get_chunking_strategy() == "hybrid":
+                    chunks_data = create_intelligent_chunks(
+                        doc_data['content'],
+                        doc_data['title'],
+                        doc_data['url']
+                    )
+                else:
+                    chunks_data = chunk_document(
+                        doc_data['content'],
+                        doc_data['title'],
+                        doc_data['url']
+                    )
                 
                 # Process chunks and generate embeddings
                 for chunk_data in chunks_data:
@@ -340,6 +385,91 @@ def list_documents(
     except Exception as e:
         logger.error(f"Error listing documents: {e}")
         raise HTTPException(status_code=500, detail=f"Error listing documents: {str(e)}")
+
+
+@app.get("/optimization/config")
+def get_optimization_status():
+    """Get current optimization configuration and status."""
+    try:
+        config = get_optimization_config()
+        return {
+            "status": "success",
+            "configuration": config.to_dict(),
+            "description": {
+                "ai_chunking": "Uses AI to create semantically coherent chunks instead of simple token-based splitting",
+                "hybrid_search": "Combines vector similarity, keyword search, and concept search with AI reranking",
+                "keyword_search": "Traditional full-text search using PostgreSQL's built-in capabilities", 
+                "concept_search": "AI-powered expansion of queries to find related concepts",
+                "ai_reranking": "Uses AI to reorder search results based on relevance to specific queries"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting optimization config: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting optimization config: {str(e)}")
+
+
+@app.post("/optimization/enable/{feature}")
+def enable_optimization_feature(feature: str):
+    """Enable a specific optimization feature."""
+    try:
+        from .optimization_config import update_config
+        
+        valid_features = {
+            "ai_chunking": "enable_ai_chunking",
+            "hybrid_search": "enable_hybrid_search", 
+            "keyword_search": "enable_keyword_search",
+            "concept_search": "enable_concept_search",
+            "ai_reranking": "enable_ai_reranking"
+        }
+        
+        if feature not in valid_features:
+            raise HTTPException(status_code=400, detail=f"Invalid feature. Valid options: {list(valid_features.keys())}")
+        
+        config_key = valid_features[feature]
+        update_config(**{config_key: True})
+        
+        return {
+            "status": "success",
+            "message": f"Enabled {feature} optimization",
+            "feature": feature,
+            "enabled": True
+        }
+        
+    except Exception as e:
+        logger.error(f"Error enabling optimization feature {feature}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error enabling feature: {str(e)}")
+
+
+@app.post("/optimization/disable/{feature}")
+def disable_optimization_feature(feature: str):
+    """Disable a specific optimization feature."""
+    try:
+        from .optimization_config import update_config
+        
+        valid_features = {
+            "ai_chunking": "enable_ai_chunking",
+            "hybrid_search": "enable_hybrid_search",
+            "keyword_search": "enable_keyword_search", 
+            "concept_search": "enable_concept_search",
+            "ai_reranking": "enable_ai_reranking"
+        }
+        
+        if feature not in valid_features:
+            raise HTTPException(status_code=400, detail=f"Invalid feature. Valid options: {list(valid_features.keys())}")
+        
+        config_key = valid_features[feature]
+        update_config(**{config_key: False})
+        
+        return {
+            "status": "success",
+            "message": f"Disabled {feature} optimization",
+            "feature": feature,
+            "enabled": False
+        }
+        
+    except Exception as e:
+        logger.error(f"Error disabling optimization feature {feature}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error disabling feature: {str(e)}")
 
 
 if __name__ == "__main__":
