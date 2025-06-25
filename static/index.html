@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wasmCloud RAG Bot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #212121;
+            color: #ececec;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #171717;
+            border-right: 1px solid #2d2d2d;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
+            padding: 20px 16px 16px;
+            border-bottom: 1px solid #2d2d2d;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ececec;
+            margin-bottom: 16px;
+        }
+        
+        .new-chat-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: transparent;
+            border: 1px solid #3d3d3d;
+            border-radius: 8px;
+            color: #ececec;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .new-chat-btn:hover {
+            background: #2d2d2d;
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        
+        .stats-section {
+            margin-bottom: 24px;
+        }
+        
+        .stats-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #8e8ea0;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #b4b4b4;
+        }
+        
+        .stat-value {
+            color: #ececec;
+            font-weight: 500;
+        }
+        
+        .examples-section {
+            margin-bottom: 24px;
+        }
+        
+        .example-item {
+            padding: 10px 12px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #b4b4b4;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .example-item:hover {
+            background: #2d2d2d;
+            border-color: #3d3d3d;
+            color: #ececec;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #212121;
+        }
+        
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #2d2d2d;
+            background: #171717;
+        }
+        
+        .chat-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ececec;
+        }
+        
+        .chat-subtitle {
+            font-size: 14px;
+            color: #8e8ea0;
+            margin-top: 4px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        
+        .message {
+            max-width: 768px;
+            margin: 0 auto 24px;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .user-avatar {
+            background: #10a37f;
+            color: white;
+        }
+        
+        .bot-avatar {
+            background: #ab68ff;
+            color: white;
+        }
+        
+        .message-author {
+            font-weight: 600;
+            color: #ececec;
+        }
+        
+        .message-content {
+            margin-left: 44px;
+            color: #ececec;
+            line-height: 1.6;
+        }
+        
+        .message-meta {
+            margin-left: 44px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #8e8ea0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .sources {
+            margin-left: 44px;
+            margin-top: 16px;
+            padding: 16px;
+            background: #2d2d2d;
+            border-radius: 8px;
+            border-left: 3px solid #ab68ff;
+        }
+        
+        .sources-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ececec;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .source-item {
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background: #3d3d3d;
+            border-radius: 6px;
+            border: 1px solid #4d4d4d;
+        }
+        
+        .source-link {
+            color: #6eb5ff;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .source-link:hover {
+            color: #9fc9ff;
+            text-decoration: underline;
+        }
+        
+        .source-similarity {
+            font-size: 12px;
+            color: #8e8ea0;
+            margin-top: 4px;
+        }
+        
+        /* Input Area */
+        .input-container {
+            padding: 24px;
+            border-top: 1px solid #2d2d2d;
+            background: #212121;
+        }
+        
+        .input-wrapper {
+            max-width: 768px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .input-form {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            background: #2d2d2d;
+            border: 1px solid #3d3d3d;
+            border-radius: 12px;
+            padding: 12px 16px;
+            transition: all 0.2s;
+        }
+        
+        .input-form:focus-within {
+            border-color: #ab68ff;
+            box-shadow: 0 0 0 2px rgba(171, 104, 255, 0.2);
+        }
+        
+        .input-form textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ececec;
+            font-size: 16px;
+            font-family: inherit;
+            resize: none;
+            min-height: 24px;
+            max-height: 200px;
+            line-height: 1.5;
+        }
+        
+        .input-form textarea::placeholder {
+            color: #8e8ea0;
+        }
+        
+        .send-btn {
+            width: 32px;
+            height: 32px;
+            background: #ab68ff;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+        
+        .send-btn:hover:not(:disabled) {
+            background: #9854e6;
+        }
+        
+        .send-btn:disabled {
+            background: #4d4d4d;
+            cursor: not-allowed;
+        }
+        
+        /* Loading */
+        .loading-message {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #8e8ea0;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #8e8ea0;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+        
+        /* Welcome Message */
+        .welcome-container {
+            max-width: 768px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 40px 24px;
+        }
+        
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ececec;
+            margin-bottom: 16px;
+        }
+        
+        .welcome-subtitle {
+            font-size: 18px;
+            color: #8e8ea0;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+        
+        .welcome-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 32px;
+        }
+        
+        .welcome-example {
+            padding: 20px;
+            background: #2d2d2d;
+            border: 1px solid #3d3d3d;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        
+        .welcome-example:hover {
+            background: #3d3d3d;
+            border-color: #4d4d4d;
+            transform: translateY(-2px);
+        }
+        
+        .welcome-example-title {
+            font-weight: 600;
+            color: #ececec;
+            margin-bottom: 8px;
+        }
+        
+        .welcome-example-desc {
+            font-size: 14px;
+            color: #8e8ea0;
+            line-height: 1.4;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                top: 0;
+                left: -100%;
+                z-index: 1000;
+                transition: left 0.3s;
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .main-content {
+                width: 100%;
+            }
+            
+            .welcome-examples {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #4d4d4d;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5d5d5d;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    🚀 wasmCloud RAG Bot
+                </div>
+                <button class="new-chat-btn" onclick="clearChat()">
+                    <span>+</span>
+                    <span>New conversation</span>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="stats-section">
+                    <div class="stats-title">System Status</div>
+                    <div class="stat-item">
+                        <span>Status</span>
+                        <span class="stat-value" id="status">Checking...</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Documents</span>
+                        <span class="stat-value" id="docCount">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Knowledge Chunks</span>
+                        <span class="stat-value" id="chunkCount">-</span>
+                    </div>
+                </div>
+                
+                <div class="examples-section">
+                    <div class="stats-title">Quick Examples</div>
+                    <div class="example-item" onclick="askQuestion('What is wasmCloud?')">
+                        What is wasmCloud?
+                    </div>
+                    <div class="example-item" onclick="askQuestion('How do I install wasmCloud?')">
+                        How do I install wasmCloud?
+                    </div>
+                    <div class="example-item" onclick="askQuestion('What are wasmCloud capabilities?')">
+                        What are wasmCloud capabilities?
+                    </div>
+                    <div class="example-item" onclick="askQuestion('How does wasmCloud handle scaling?')">
+                        How does wasmCloud handle scaling?
+                    </div>
+                    <div class="example-item" onclick="askQuestion('What is the difference between components and providers?')">
+                        Components vs Providers?
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="chat-header">
+                <div class="chat-title">wasmCloud Assistant</div>
+                <div class="chat-subtitle">Ask questions about wasmCloud documentation</div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="welcome-container" id="welcomeContainer">
+                    <div class="welcome-title">Welcome to wasmCloud Assistant</div>
+                    <div class="welcome-subtitle">
+                        I'm here to help you learn about wasmCloud. Ask me anything about the platform, 
+                        its features, installation, or how to get started building applications.
+                    </div>
+                    
+                    <div class="welcome-examples">
+                        <div class="welcome-example" onclick="askQuestion('What is wasmCloud and how does it work?')">
+                            <div class="welcome-example-title">🌟 Getting Started</div>
+                            <div class="welcome-example-desc">Learn what wasmCloud is and how it works</div>
+                        </div>
+                        <div class="welcome-example" onclick="askQuestion('How do I build my first wasmCloud application?')">
+                            <div class="welcome-example-title">🚀 First Application</div>
+                            <div class="welcome-example-desc">Step-by-step guide to building your first app</div>
+                        </div>
+                        <div class="welcome-example" onclick="askQuestion('What are wasmCloud capabilities and how do I use them?')">
+                            <div class="welcome-example-title">⚡ Capabilities</div>
+                            <div class="welcome-example-desc">Understanding wasmCloud's capability system</div>
+                        </div>
+                        <div class="welcome-example" onclick="askQuestion('How does wasmCloud compare to other WebAssembly platforms?')">
+                            <div class="welcome-example-title">🔍 Comparisons</div>
+                            <div class="welcome-example-desc">How wasmCloud differs from alternatives</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <form class="input-form" id="questionForm">
+                        <textarea 
+                            id="questionInput" 
+                            placeholder="Ask a question about wasmCloud..." 
+                            rows="1"
+                            required
+                        ></textarea>
+                        <button type="submit" class="send-btn" id="submitBtn">
+                            <span>↗</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let isLoading = false;
+        let messageCount = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            setupForm();
+            setupTextarea();
+        });
+
+        function setupForm() {
+            document.getElementById('questionForm').addEventListener('submit', handleSubmit);
+        }
+
+        function setupTextarea() {
+            const textarea = document.getElementById('questionInput');
+            
+            // Auto-resize textarea
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = this.scrollHeight + 'px';
+            });
+            
+            // Handle Enter key
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                }
+            });
+        }
+
+        async function loadStats() {
+            try {
+                const [healthResponse, statsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/health`),
+                    fetch(`${API_BASE}/stats`)
+                ]);
+
+                const health = await healthResponse.json();
+                const stats = await statsResponse.json();
+
+                document.getElementById('status').textContent = health.status === 'healthy' ? '✅ Healthy' : '❌ Unhealthy';
+                document.getElementById('docCount').textContent = stats.total_documents || 0;
+                document.getElementById('chunkCount').textContent = stats.total_chunks || 0;
+            } catch (error) {
+                document.getElementById('status').textContent = '❌ Error';
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            const textarea = document.getElementById('questionInput');
+            const question = textarea.value.trim();
+            
+            if (question && !isLoading) {
+                askQuestion(question);
+                textarea.value = '';
+                textarea.style.height = 'auto';
+            }
+        }
+
+        async function askQuestion(question) {
+            if (isLoading) return;
+            
+            // Hide welcome screen if this is the first message
+            if (messageCount === 0) {
+                document.getElementById('welcomeContainer').style.display = 'none';
+            }
+            
+            isLoading = true;
+            messageCount++;
+            
+            const submitBtn = document.getElementById('submitBtn');
+            
+            // Add user message
+            addUserMessage(question);
+            
+            // Show loading
+            const loadingElement = addLoadingMessage();
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        include_sources: true
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Remove loading message
+                removeMessage(loadingElement);
+                
+                if (response.ok) {
+                    addBotMessage(data);
+                } else {
+                    addBotMessage({
+                        answer: `❌ Error: ${data.detail || 'Unknown error'}`,
+                        sources: [],
+                        chunks_used: 0,
+                        response_time: 0
+                    });
+                }
+            } catch (error) {
+                removeMessage(loadingElement);
+                addBotMessage({
+                    answer: `❌ Network error: ${error.message}`,
+                    sources: [],
+                    chunks_used: 0,
+                    response_time: 0
+                });
+            } finally {
+                isLoading = false;
+                submitBtn.disabled = false;
+            }
+        }
+
+        function addUserMessage(content) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar user-avatar">U</div>
+                    <div class="message-author">You</div>
+                </div>
+                <div class="message-content">${escapeHtml(content)}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function addBotMessage(data) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            let sourcesHtml = '';
+            if (data.sources && data.sources.length > 0) {
+                sourcesHtml = `
+                    <div class="sources">
+                        <div class="sources-title">
+                            📚 Sources
+                        </div>
+                        ${data.sources.map(source => `
+                            <div class="source-item">
+                                <a href="${source.url}" target="_blank" class="source-link">${escapeHtml(source.title)}</a>
+                                <div class="source-similarity">Relevance: ${(source.similarity * 100).toFixed(1)}%</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar bot-avatar">🤖</div>
+                    <div class="message-author">wasmCloud Assistant</div>
+                </div>
+                <div class="message-content">${formatAnswer(data.answer)}</div>
+                <div class="message-meta">
+                    <span>⏱️ ${data.response_time.toFixed(2)}s</span>
+                    <span>📊 ${data.chunks_used} sources used</span>
+                </div>
+                ${sourcesHtml}
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function addLoadingMessage() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar bot-avatar">🤖</div>
+                    <div class="message-author">wasmCloud Assistant</div>
+                </div>
+                <div class="message-content">
+                    <div class="loading-message">
+                        <div class="typing-indicator">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                        <span>Thinking...</span>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
+            
+            return messageDiv;
+        }
+
+        function removeMessage(messageElement) {
+            if (messageElement && messageElement.parentNode) {
+                messageElement.parentNode.removeChild(messageElement);
+            }
+        }
+
+        function clearChat() {
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = `
+                <div class="welcome-container" id="welcomeContainer">
+                    <div class="welcome-title">Welcome to wasmCloud Assistant</div>
+                    <div class="welcome-subtitle">
+                        I'm here to help you learn about wasmCloud. Ask me anything about the platform, 
+                        its features, installation, or how to get started building applications.
+                    </div>
+                    
+                    <div class="welcome-examples">
+                        <div class="welcome-example" onclick="askQuestion('What is wasmCloud and how does it work?')">
+                            <div class="welcome-example-title">🌟 Getting Started</div>
+                            <div class="welcome-example-desc">Learn what wasmCloud is and how it works</div>
+                        </div>
+                        <div class="welcome-example" onclick="askQuestion('How do I build my first wasmCloud application?')">
+                            <div class="welcome-example-title">🚀 First Application</div>
+                            <div class="welcome-example-desc">Step-by-step guide to building your first app</div>
+                        </div>
+                        <div class="welcome-example" onclick="askQuestion('What are wasmCloud capabilities and how do I use them?')">
+                            <div class="welcome-example-title">⚡ Capabilities</div>
+                            <div class="welcome-example-desc">Understanding wasmCloud's capability system</div>
+                        </div>
+                        <div class="welcome-example" onclick="askQuestion('How does wasmCloud compare to other WebAssembly platforms?')">
+                            <div class="welcome-example-title">🔍 Comparisons</div>
+                            <div class="welcome-example-desc">How wasmCloud differs from alternatives</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            messageCount = 0;
+        }
+
+        function scrollToBottom() {
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatAnswer(answer) {
+            // Simple formatting for better readability
+            return answer
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>')
+                .replace(/^/, '<p>')
+                .replace(/$/, '</p>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>');
+        }
+
+        // Auto-refresh stats every 30 seconds
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html> 
