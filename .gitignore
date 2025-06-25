@@ -5,12 +5,15 @@ ENV/
 .venv/
 .env/
 
-# Environment variables
+# Environment variables - NEVER commit these files!
+# They contain sensitive API keys and credentials
 .env
 .env.local
 .env.development
 .env.test
 .env.production
+config.env
+*.env
 
 # Python
 __pycache__/

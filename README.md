@@ -13,11 +13,16 @@ A Retrieval-Augmented Generation (RAG) bot that uses wasmCloud documentation to 
 
 ## Setup
 
+### 🚀 Quick Start for Git Users
+
+**Just cloned this repository?** See [SETUP_GUIDE.md](SETUP_GUIDE.md) for a 5-minute setup guide!
+
 ### Prerequisites
 
 - Python 3.9+
 - PostgreSQL with pgvector extension
 - OpenAI API key
+- **Required**: OpenAI API key (get from [OpenAI Platform](https://platform.openai.com/api-keys))
 
 ### Quick Start
 
@@ -93,6 +98,107 @@ CREATE EXTENSION IF NOT EXISTS vector;
 ```bash
 cp config.env.example .env
 # Edit .env with your OpenAI API key and database settings
+```
+
+## Environment Configuration
+
+### Required Environment Variables
+
+Before running the application, you **must** configure the following environment variables:
+
+1. **Copy the example configuration:**
+   ```bash
+   cp config.env.example .env
+   ```
+
+2. **Set your OpenAI API key:**
+   - Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+   - Edit `.env` and replace `your_openai_api_key_here` with your actual key:
+   ```bash
+   OPENAI_API_KEY=sk-proj-your-actual-api-key-here
+   ```
+
+3. **Database configuration (default values work with Docker):**
+   ```bash
+   # These values match docker-compose.yml - no changes needed if using Docker
+   DATABASE_URL=postgresql://wasmcloud_user:wasmcloud_password@localhost:5432/wasmcloud_rag
+   PGVECTOR_USER=wasmcloud_user
+   PGVECTOR_PASSWORD=wasmcloud_password
+   ```
+
+4. **Optional: Customize AI models and processing:**
+   ```bash
+   # Use different OpenAI models if preferred
+   EMBEDDING_MODEL=text-embedding-3-small  # or text-embedding-ada-002
+   CHAT_MODEL=gpt-4-1106-preview           # or gpt-3.5-turbo
+   
+   # Adjust text processing
+   CHUNK_SIZE=1000      # Larger = more context, slower processing
+   CHUNK_OVERLAP=200    # Overlap between text chunks
+   ```
+
+### Environment Setup Examples
+
+**Quick setup for local development:**
+```bash
+# Copy and edit the configuration
+cp config.env.example .env
+
+# Edit with your favorite editor
+nano .env
+# or
+code .env
+# or
+vim .env
+
+# Update the OpenAI API key line:
+# OPENAI_API_KEY=sk-proj-your-actual-api-key-here
+```
+
+**Production setup:**
+```bash
+# Set environment variables directly (for deployment)
+export OPENAI_API_KEY="your-actual-api-key"
+export DATABASE_URL="postgresql://user:pass@host:5432/db"
+export CHAT_MODEL="gpt-4-1106-preview"
+```
+
+### 🚨 Important Security Notes
+
+- **Never commit `.env` files to git** - they contain sensitive API keys
+- **Use different API keys for development and production**
+- **Rotate API keys regularly for security**
+- **Set up billing alerts in OpenAI dashboard to monitor usage**
+
+### Troubleshooting Environment Issues
+
+**OpenAI API Key Issues:**
+```bash
+# Test your API key
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     -H "Content-Type: application/json" \
+     https://api.openai.com/v1/models
+```
+
+**Database Connection Issues:**
+```bash
+# Test database connection
+python3 -c "
+from server.database import check_database_connection
+print('Database connected:', check_database_connection())
+"
+```
+
+**Check all environment variables are loaded:**
+```bash
+python3 -c "
+import os
+from dotenv import load_dotenv
+load_dotenv()
+print('OpenAI Key configured:', bool(os.getenv('OPENAI_API_KEY')))
+print('Database URL:', os.getenv('DATABASE_URL'))
+print('Embedding Model:', os.getenv('EMBEDDING_MODEL'))
+"
 ```
 
 ### Database Setup
