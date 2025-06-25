@@ -276,7 +276,12 @@ python3 mcp_client.py
 python3 mcp_server.py
 ```
 
-See [MCP_USAGE_GUIDE.md](MCP_USAGE_GUIDE.md) for detailed integration instructions.
+## 📖 Documentation
+
+- **[System Design](SYSTEM_DESIGN.md)** - Comprehensive architecture, data flow, and implementation details
+- **[Optimization Analysis](OPTIMIZATION_ANALYSIS.md)** - AI enhancement features and performance improvements  
+- **[Setup Guide](SETUP_GUIDE.md)** - Complete installation and configuration instructions
+- **[MCP Usage Guide](MCP_USAGE_GUIDE.md)** - Model Context Protocol integration for AI assistants
 
 ## Architecture
 
