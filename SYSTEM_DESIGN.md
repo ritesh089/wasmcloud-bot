@@ -490,6 +490,80 @@ class OptimizationConfig:
 
 ## 📊 **Data Flow Analysis**
 
+### **System Data Flow Diagram**
+
+The following flowchart provides a visual representation of how data flows through the wasmCloud RAG bot system:
+
+```mermaid
+flowchart TD
+    A["🌐 wasmCloud Documentation<br/>https://wasmcloud.com/docs/"] --> B["📥 Web Scraper<br/>(scraper.py)"]
+    
+    B --> C["📄 Raw HTML Content"]
+    C --> D["🔧 Content Processing<br/>- Extract text<br/>- Clean HTML<br/>- Parse structure"]
+    
+    D --> E["✂️ Text Chunking<br/>(embeddings.py)<br/>- Configurable size<br/>- Overlap handling"]
+    
+    E --> F["🤖 OpenAI Embeddings<br/>text-embedding-3-small<br/>1536 dimensions"]
+    
+    F --> G["🗄️ PostgreSQL + pgvector<br/>- Documents table<br/>- Chunks table<br/>- Vector storage"]
+    
+    H["👤 User Query"] --> I["🔍 Query Processing<br/>(rag.py)"]
+    I --> J["🤖 Query Embedding<br/>OpenAI API"]
+    
+    J --> K["🎯 Vector Similarity Search<br/>PostgreSQL pgvector<br/>Cosine similarity"]
+    
+    G --> K
+    K --> L["📋 Relevant Chunks<br/>Top-K results"]
+    
+    L --> M["🧠 Context Assembly<br/>- Combine chunks<br/>- Add metadata<br/>- Format for GPT-4"]
+    
+    M --> N["🤖 GPT-4 Response<br/>- Context-aware<br/>- Source citations<br/>- Structured output"]
+    
+    N --> O["📤 Response Delivery"]
+    
+    subgraph "🖥️ User Interfaces"
+        P["🌐 Web Interface<br/>(index.html)"]
+        Q["🔌 REST API<br/>(FastAPI)"]
+        R["🤝 MCP Integration<br/>(mcp_server.py)"]
+    end
+    
+    O --> P
+    O --> Q
+    O --> R
+    
+    subgraph "📊 Monitoring & Logging"
+        S["📈 Query Statistics"]
+        T["🗃️ Query Logs"]
+        U["⚡ Health Checks"]
+    end
+    
+    I --> S
+    I --> T
+    Q --> U
+    
+    subgraph "🔧 Development Tools"
+        V["🚀 Start Script<br/>(start.zsh)"]
+        W["🛠️ Dev Environment<br/>(dev.zsh)"]
+        X["⚙️ Setup Script<br/>(setup.zsh)"]
+    end
+    
+    classDef input fill:#e1f5fe
+    classDef processing fill:#f3e5f5
+    classDef storage fill:#e8f5e8
+    classDef output fill:#fff3e0
+    classDef interface fill:#fce4ec
+    classDef monitoring fill:#f1f8e9
+    classDef tools fill:#fff8e1
+    
+    class A,H input
+    class B,C,D,E,F,I,J,K,L,M,N processing
+    class G storage
+    class O output
+    class P,Q,R interface
+    class S,T,U monitoring
+    class V,W,X tools
+```
+
 ### **Complete User Query Data Flow**
 
 ```
