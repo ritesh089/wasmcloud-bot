@@ -23,6 +23,12 @@ class OptimizationConfig:
     enable_concept_search: bool = True
     enable_ai_reranking: bool = True
     
+    # Knowledge Graph Enhanced RAG
+    enable_kg_enhanced: bool = False  # Start with False for gradual rollout
+    kg_extraction_model: str = "gpt-4-1106-preview"
+    kg_max_triplets_per_query: int = 15
+    kg_enable_reasoning: bool = True
+    
     # Search Parameters
     vector_search_k: int = 10  # Initial retrieval count
     final_results_k: int = 5   # Final results after reranking
@@ -53,6 +59,11 @@ class OptimizationConfig:
             enable_concept_search=os.getenv('ENABLE_CONCEPT_SEARCH', 'true').lower() == 'true',
             enable_ai_reranking=os.getenv('ENABLE_AI_RERANKING', 'true').lower() == 'true',
             
+            enable_kg_enhanced=os.getenv('ENABLE_KG_ENHANCED', 'false').lower() == 'true',
+            kg_extraction_model=os.getenv('KG_EXTRACTION_MODEL', 'gpt-4-1106-preview'),
+            kg_max_triplets_per_query=int(os.getenv('KG_MAX_TRIPLETS', '15')),
+            kg_enable_reasoning=os.getenv('KG_ENABLE_REASONING', 'true').lower() == 'true',
+            
             vector_search_k=int(os.getenv('VECTOR_SEARCH_K', '10')),
             final_results_k=int(os.getenv('FINAL_RESULTS_K', '5')),
             similarity_threshold=float(os.getenv('SIMILARITY_THRESHOLD', '0.6')),
@@ -76,7 +87,9 @@ class OptimizationConfig:
     
     def get_rag_strategy(self) -> str:
         """Get the RAG strategy to use."""
-        if self.enable_hybrid_search:
+        if self.enable_kg_enhanced:
+            return "kg_enhanced"  # Use KGEnhancedRAG
+        elif self.enable_hybrid_search:
             return "advanced"  # Use HybridSearchRAG
         else:
             return "basic"  # Use basic RAGPipeline
@@ -88,12 +101,15 @@ class OptimizationConfig:
             'rag_strategy': self.get_rag_strategy(),
             'ai_chunking_enabled': self.enable_ai_chunking,
             'hybrid_search_enabled': self.enable_hybrid_search,
+            'kg_enhanced_enabled': self.enable_kg_enhanced,
             'keyword_search_enabled': self.enable_keyword_search,
             'concept_search_enabled': self.enable_concept_search,
             'ai_reranking_enabled': self.enable_ai_reranking,
+            'kg_reasoning_enabled': self.kg_enable_reasoning,
             'vector_search_k': self.vector_search_k,
             'final_results_k': self.final_results_k,
-            'similarity_threshold': self.similarity_threshold
+            'similarity_threshold': self.similarity_threshold,
+            'kg_max_triplets': self.kg_max_triplets_per_query
         }
 
 

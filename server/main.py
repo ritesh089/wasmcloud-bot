@@ -15,6 +15,12 @@ from dotenv import load_dotenv
 from .database import get_db, init_database, check_database_connection, get_database_stats
 from .rag import ask_question
 from .advanced_rag import ask_question_advanced
+from .kg_enhanced_rag import ask_question_kg_enhanced, get_kg_rag_capabilities
+from .knowledge_graph import (
+    extract_triplets_from_all_chunks, 
+    get_knowledge_graph_stats,
+    KnowledgeGraphExtractor
+)
 from .scraper import scrape_wasmcloud_docs
 from .models import Document, Chunk
 from .embeddings import chunk_document, generate_chunk_embedding
@@ -167,7 +173,9 @@ def query_bot(
         # Use optimized RAG if enabled
         config = get_optimization_config()
         
-        if config.get_rag_strategy() == "advanced":
+        if config.get_rag_strategy() == "kg_enhanced":
+            result = ask_question_kg_enhanced(request.question, db)
+        elif config.get_rag_strategy() == "advanced":
             result = ask_question_advanced(request.question, db)
         else:
             result = ask_question(request.question, db)
@@ -176,7 +184,7 @@ def query_bot(
             answer=result['answer'],
             sources=result['sources'] if request.include_sources else [],
             chunks_used=result['chunks_used'],
-            response_time=result['response_time']
+            response_time=result.get('response_time', result.get('processing_time', 0))
         )
         
     except Exception as e:
@@ -210,6 +218,88 @@ def query_bot_advanced(
     except Exception as e:
         logger.error(f"Error processing advanced query: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing advanced query: {str(e)}")
+
+
+@app.post("/query/kg", response_model=QueryResponse)
+def query_bot_kg_enhanced(
+    request: QueryRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Ask a question using Knowledge Graph Enhanced RAG.
+    
+    This combines traditional vector search with knowledge graph reasoning for more
+    comprehensive and accurate answers with relationship-aware context.
+    """
+    try:
+        if not request.question.strip():
+            raise HTTPException(status_code=400, detail="Question cannot be empty")
+        
+        logger.info(f"Processing KG-enhanced query: {request.question[:100]}...")
+        
+        result = ask_question_kg_enhanced(request.question, db)
+        
+        # Format response for QueryResponse model
+        return QueryResponse(
+            answer=result['answer'],
+            sources=result.get('sources', []) if request.include_sources else [],
+            chunks_used=result['chunks_used'],
+            response_time=result['processing_time']
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing KG-enhanced query: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing KG-enhanced query: {str(e)}")
+
+
+@app.post("/kg/extract")
+def extract_knowledge_graph(
+    batch_size: int = 50,
+    db: Session = Depends(get_db)
+):
+    """
+    Extract knowledge graph triplets from all document chunks using GPT-4.
+    
+    This is a batch operation that processes chunks without existing triplets
+    and extracts structured knowledge relationships.
+    """
+    try:
+        logger.info("Starting knowledge graph extraction...")
+        
+        result = extract_triplets_from_all_chunks(db, batch_size=batch_size)
+        
+        return {
+            "status": "success",
+            "chunks_processed": result["chunks_processed"],
+            "triplets_extracted": result["triplets_extracted"],
+            "message": f"Extracted {result['triplets_extracted']} triplets from {result['chunks_processed']} chunks"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error extracting knowledge graph: {e}")
+        raise HTTPException(status_code=500, detail=f"Knowledge graph extraction failed: {str(e)}")
+
+
+@app.get("/kg/stats")
+def get_knowledge_graph_stats(db: Session = Depends(get_db)):
+    """Get knowledge graph statistics and capabilities."""
+    try:
+        kg_stats = get_knowledge_graph_stats(db)
+        kg_capabilities = get_kg_rag_capabilities(db)
+        
+        return {
+            "knowledge_graph": kg_stats,
+            "rag_capabilities": kg_capabilities,
+            "endpoints": {
+                "kg_query": "/query/kg",
+                "extract_kg": "/kg/extract",
+                "kg_stats": "/kg/stats"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting KG stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting KG stats: {str(e)}")
 
 
 @app.post("/ingest", response_model=IngestResponse)
@@ -398,9 +488,11 @@ def get_optimization_status():
             "description": {
                 "ai_chunking": "Uses AI to create semantically coherent chunks instead of simple token-based splitting",
                 "hybrid_search": "Combines vector similarity, keyword search, and concept search with AI reranking",
+                "kg_enhanced": "Knowledge Graph Enhanced RAG that uses extracted triplets for relationship-aware reasoning",
                 "keyword_search": "Traditional full-text search using PostgreSQL's built-in capabilities", 
                 "concept_search": "AI-powered expansion of queries to find related concepts",
-                "ai_reranking": "Uses AI to reorder search results based on relevance to specific queries"
+                "ai_reranking": "Uses AI to reorder search results based on relevance to specific queries",
+                "kg_reasoning": "AI reasoning that combines text chunks with knowledge graph relationships"
             }
         }
     except Exception as e:
@@ -417,9 +509,11 @@ def enable_optimization_feature(feature: str):
         valid_features = {
             "ai_chunking": "enable_ai_chunking",
             "hybrid_search": "enable_hybrid_search", 
+            "kg_enhanced": "enable_kg_enhanced",
             "keyword_search": "enable_keyword_search",
             "concept_search": "enable_concept_search",
-            "ai_reranking": "enable_ai_reranking"
+            "ai_reranking": "enable_ai_reranking",
+            "kg_reasoning": "kg_enable_reasoning"
         }
         
         if feature not in valid_features:
@@ -449,9 +543,11 @@ def disable_optimization_feature(feature: str):
         valid_features = {
             "ai_chunking": "enable_ai_chunking",
             "hybrid_search": "enable_hybrid_search",
+            "kg_enhanced": "enable_kg_enhanced",
             "keyword_search": "enable_keyword_search", 
             "concept_search": "enable_concept_search",
-            "ai_reranking": "enable_ai_reranking"
+            "ai_reranking": "enable_ai_reranking",
+            "kg_reasoning": "kg_enable_reasoning"
         }
         
         if feature not in valid_features:

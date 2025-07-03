@@ -278,6 +278,7 @@ python3 mcp_server.py
 
 ## 📖 Documentation
 
+- **[Knowledge Graph Guide](KNOWLEDGE_GRAPH_GUIDE.md)** - Advanced knowledge graph enhancement for relationship-aware reasoning
 - **[System Design](SYSTEM_DESIGN.md)** - Comprehensive architecture, data flow, and implementation details
 - **[Optimization Analysis](OPTIMIZATION_ANALYSIS.md)** - AI enhancement features and performance improvements  
 - **[Setup Guide](SETUP_GUIDE.md)** - Complete installation and configuration instructions
