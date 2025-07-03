@@ -4,29 +4,32 @@
 
 1. [System Overview](#system-overview)
 2. [Architecture Components](#architecture-components)
-3. [Client-Side Implementation](#client-side-implementation)
-4. [Server-Side Implementation](#server-side-implementation)
-5. [RAG Pipeline Deep Dive](#rag-pipeline-deep-dive)
-6. [OpenAI API Integration](#openai-api-integration)
-7. [Data Flow Analysis](#data-flow-analysis)
-8. [Database Design](#database-design)
-9. [Optimization Features](#optimization-features)
-10. [API Endpoints](#api-endpoints)
-11. [Security & Performance](#security--performance)
-12. [Deployment & Configuration](#deployment--configuration)
+3. [Knowledge Graph Enhanced RAG](#knowledge-graph-enhanced-rag)
+4. [Client-Side Implementation](#client-side-implementation)
+5. [Server-Side Implementation](#server-side-implementation)
+6. [RAG Pipeline Deep Dive](#rag-pipeline-deep-dive)
+7. [Knowledge Graph Pipeline](#knowledge-graph-pipeline)
+8. [OpenAI API Integration](#openai-api-integration)
+9. [Data Flow Analysis](#data-flow-analysis)
+10. [Database Design](#database-design)
+11. [Optimization Features](#optimization-features)
+12. [API Endpoints](#api-endpoints)
+13. [Security & Performance](#security--performance)
+14. [Deployment & Configuration](#deployment--configuration)
 
 ---
 
 ## 🔍 **System Overview**
 
-The wasmCloud RAG (Retrieval-Augmented Generation) Bot is an intelligent question-answering system that provides accurate, contextual responses about wasmCloud technology by combining modern AI techniques with a comprehensive knowledge base.
+The wasmCloud RAG (Retrieval-Augmented Generation) Bot is an intelligent question-answering system that provides accurate, contextual responses about wasmCloud technology by combining modern AI techniques with a comprehensive knowledge base and **Knowledge Graph Enhanced Reasoning**.
 
 ### **Core Functionality**
 - **Intelligent Document Processing**: AI-powered scraping and chunking of wasmCloud documentation
-- **Hybrid Search System**: Combines vector similarity, keyword search, and concept expansion
-- **Advanced RAG Pipeline**: Uses OpenAI's GPT models for context-aware response generation
-- **Real-time Query Processing**: Provides comprehensive answers with source citations
-- **Optimization Controls**: Configurable AI features with cost management
+- **Knowledge Graph Construction**: Automated extraction of entities and relationships using GPT-4
+- **Multi-Strategy Search System**: Vector similarity, keyword search, concept expansion, and graph traversal
+- **Advanced RAG Pipeline**: Three-tier system (Basic → Advanced → Knowledge Graph Enhanced)
+- **Real-time Query Processing**: Provides comprehensive answers with relationship-aware reasoning
+- **Optimization Controls**: Configurable AI features with cost management and graceful fallbacks
 
 ### **Technology Stack**
 ```
@@ -34,15 +37,34 @@ Frontend:  HTML5, CSS3, JavaScript (Dark Mode UI)
 Backend:   Python 3.13, FastAPI, SQLAlchemy
 Database:  PostgreSQL with pgvector extension
 AI/ML:     OpenAI GPT-4, OpenAI Embeddings, tiktoken
-Search:    Vector similarity, PostgreSQL full-text search
+Search:    Vector similarity, PostgreSQL full-text search, Knowledge Graph traversal
+KG:        Entity extraction, Relationship mapping, Triplet reasoning
 Tools:     Docker, uvicorn, BeautifulSoup, requests
+```
+
+### **Three-Tier RAG Architecture**
+
+```mermaid
+graph LR
+    A[Query] --> B{Auto-Route}
+    B -->|Simple| C[Basic RAG]
+    B -->|Complex| D[Advanced RAG]
+    B -->|Relationship| E[KG Enhanced RAG]
+    
+    C --> F[Vector Search Only]
+    D --> G[Hybrid Search + AI Reranking]
+    E --> H[Graph Reasoning + Multi-source Integration]
+    
+    F --> I[Response]
+    G --> I
+    H --> I
 ```
 
 ---
 
 ## 🏗️ **Architecture Components**
 
-The system follows a modern microservices-inspired architecture with clear separation of concerns:
+The system follows a modern microservices-inspired architecture with knowledge graph enhancement:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -60,13 +82,17 @@ The system follows a modern microservices-inspired architecture with clear separ
 ┌─────────────────────────────────────────────────────────────┐
 │                  BUSINESS LOGIC LAYER                      │
 ├─────────────────────────────────────────────────────────────┤
-│ RAG Pipeline │ AI Chunker │ Hybrid Search │ Optimization   │
+│ KG Enhanced RAG │ Advanced RAG │ Basic RAG │ Optimization  │
+├─────────────────────────────────────────────────────────────┤
+│ Knowledge Graph │ AI Chunker │ Hybrid Search │ Auto-Router │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
 │                    DATA LAYER                              │
 ├─────────────────────────────────────────────────────────────┤
-│  PostgreSQL DB │ pgvector Extension │ Embedding Cache      │
+│ PostgreSQL DB │ pgvector │ KG Tables │ Embedding Cache     │
+├─────────────────────────────────────────────────────────────┤
+│ Entities │ Relations │ Triplets │ Chunks │ Documents       │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
@@ -74,6 +100,177 @@ The system follows a modern microservices-inspired architecture with clear separ
 ├─────────────────────────────────────────────────────────────┤
 │      OpenAI API        │     wasmCloud Documentation       │
 └─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🕸️ **Knowledge Graph Enhanced RAG**
+
+### **Knowledge Graph Architecture**
+
+```mermaid
+graph TD
+    A[Document Chunks] --> B[GPT-4 Entity Extraction]
+    B --> C[Entity Normalization]
+    C --> D[Triplet Storage]
+    
+    E[User Query] --> F[Query Analysis]
+    F --> G[Hybrid Retrieval]
+    F --> H[Graph Context Retrieval]
+    
+    G --> I[Text Chunks]
+    H --> J[Related Entities & Relationships]
+    
+    I --> K[GPT-4 Multi-source Reasoning]
+    J --> K
+    K --> L[Enhanced Response]
+    
+    subgraph "Knowledge Graph Components"
+        M[Entities Table]
+        N[Relations Table]
+        O[Triplets Table]
+        
+        M --> O
+        N --> O
+    end
+```
+
+### **Knowledge Graph Features**
+
+#### **1. Entity Extraction & Management**
+- **wasmCloud-Specific Entities**: Actors, providers, interfaces, capabilities, applications
+- **AI-Powered Extraction**: GPT-4 identifies and categorizes entities from documentation
+- **Embedding Storage**: Vector representations for semantic similarity
+- **Deduplication**: Intelligent merging of similar entities
+
+#### **2. Relationship Discovery**
+- **Relationship Types**: implements, provides, requires, uses, contains, extends, depends_on
+- **Frequency Tracking**: Relationship importance based on occurrence
+- **Bidirectional Relations**: Automatic inverse relationship creation
+- **Confidence Scoring**: AI-generated confidence levels for relationships
+
+#### **3. Graph-Enhanced Query Processing**
+```python
+# Multi-step KG Enhanced Query Process
+1. Traditional Retrieval (Vector + Keyword)
+2. Entity Identification in Query
+3. Graph Traversal for Related Concepts
+4. Context Integration 
+5. Multi-source AI Reasoning
+6. Enhanced Response Generation
+```
+
+### **Expected Performance Improvements**
+
+| Metric | Basic RAG | Advanced RAG | KG Enhanced RAG |
+|--------|-----------|--------------|-----------------|
+| Technical Accuracy | 60-70% | 75-85% | 85-95% |
+| Relationship Understanding | 30-40% | 50-60% | 80-90% |
+| Context Completeness | 50-60% | 70-80% | 85-95% |
+| Complex Query Handling | 40-50% | 65-75% | 90-95% |
+
+### **Cost Analysis**
+
+| Operation | Time | Cost per Query | API Calls |
+|-----------|------|---------------|-----------|
+| Traditional Search | 2-4s | $0.02-0.05 | 3-4 |
+| KG Context Retrieval | 1-2s | $0.01 | 1 |
+| Multi-source Reasoning | 3-6s | $0.02-0.06 | 1 |
+| **Total KG Enhanced** | **6-12s** | **$0.05-0.12** | **5-6** |
+
+---
+
+## 🔄 **Knowledge Graph Pipeline**
+
+### **Phase 1: Knowledge Extraction**
+
+```python
+# Automated Triplet Extraction Process
+async def extract_triplets_from_chunk(chunk_content: str) -> List[Triplet]:
+    """
+    Extract semantic relationships using GPT-4
+    """
+    prompt = f"""
+    Extract semantic triplets from this wasmCloud documentation:
+    
+    Content: {chunk_content}
+    
+    Focus on wasmCloud entities: actors, providers, interfaces, capabilities
+    Relationship types: implements, provides, requires, uses, contains
+    
+    Return JSON format: [{{
+        "subject": "entity1",
+        "predicate": "relationship", 
+        "object": "entity2",
+        "confidence": 0.9
+    }}]
+    """
+    
+    # GPT-4 extraction + entity normalization + embedding generation
+    return normalized_triplets
+```
+
+### **Phase 2: Graph Construction**
+
+```sql
+-- Knowledge Graph Schema
+CREATE TABLE entities (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR NOT NULL,
+    entity_type VARCHAR NOT NULL, -- actor, provider, interface, etc.
+    description TEXT,
+    embedding VECTOR(1536), -- Semantic representation
+    metadata JSONB,
+    first_seen TIMESTAMP DEFAULT NOW(),
+    last_updated TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE relations (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR NOT NULL, -- implements, provides, requires, etc.
+    description TEXT,
+    frequency INTEGER DEFAULT 1, -- How often this relation appears
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE triplets (
+    id SERIAL PRIMARY KEY,
+    subject_id INTEGER REFERENCES entities(id),
+    predicate_id INTEGER REFERENCES relations(id),
+    object_id INTEGER REFERENCES entities(id),
+    confidence FLOAT NOT NULL, -- AI confidence in this relationship
+    source_chunk_id INTEGER REFERENCES chunks(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### **Phase 3: Graph-Enhanced Retrieval**
+
+```python
+async def kg_enhanced_search(query: str, k: int = 5) -> Dict:
+    """
+    Multi-strategy search with knowledge graph reasoning
+    """
+    # Step 1: Traditional hybrid search
+    text_chunks = await hybrid_search(query, k=10)
+    
+    # Step 2: Extract entities from query
+    query_entities = await extract_entities_from_query(query)
+    
+    # Step 3: Graph traversal for related concepts
+    related_entities = await find_related_entities(query_entities)
+    
+    # Step 4: Retrieve relationship context
+    kg_context = await get_relationship_context(related_entities)
+    
+    # Step 5: Multi-source reasoning
+    enhanced_response = await multi_source_reasoning(
+        text_chunks=text_chunks,
+        kg_context=kg_context,
+        query=query
+    )
+    
+    return enhanced_response
 ```
 
 ---
@@ -490,9 +687,9 @@ class OptimizationConfig:
 
 ## 📊 **Data Flow Analysis**
 
-### **System Data Flow Diagram**
+### **Enhanced System Data Flow with Knowledge Graph**
 
-The following flowchart provides a visual representation of how data flows through the wasmCloud RAG bot system:
+The following flowchart shows the complete data flow including the new Knowledge Graph Enhanced RAG pipeline:
 
 ```mermaid
 flowchart TD
@@ -504,22 +701,43 @@ flowchart TD
     D --> E["✂️ Text Chunking<br/>(embeddings.py)<br/>- Configurable size<br/>- Overlap handling"]
     
     E --> F["🤖 OpenAI Embeddings<br/>text-embedding-3-small<br/>1536 dimensions"]
+    E --> KG1["🕸️ Knowledge Graph Extraction<br/>(knowledge_graph.py)<br/>- GPT-4 triplet extraction<br/>- Entity normalization"]
     
     F --> G["🗄️ PostgreSQL + pgvector<br/>- Documents table<br/>- Chunks table<br/>- Vector storage"]
     
-    H["👤 User Query"] --> I["🔍 Query Processing<br/>(rag.py)"]
-    I --> J["🤖 Query Embedding<br/>OpenAI API"]
+    KG1 --> KG2["🧠 Knowledge Graph Storage<br/>- Entities table<br/>- Relations table<br/>- Triplets table"]
     
-    J --> K["🎯 Vector Similarity Search<br/>PostgreSQL pgvector<br/>Cosine similarity"]
+    H["👤 User Query"] --> I["🔍 Query Router<br/>(main.py)"]
+    I --> I1{{"🎯 Strategy Selection"}}
     
-    G --> K
-    K --> L["📋 Relevant Chunks<br/>Top-K results"]
+    I1 -->|Simple| J1["🔍 Basic RAG<br/>(rag.py)"]
+    I1 -->|Complex| J2["🔍 Advanced RAG<br/>(advanced_rag.py)"]
+    I1 -->|Relationships| J3["🕸️ KG Enhanced RAG<br/>(kg_enhanced_rag.py)"]
     
-    L --> M["🧠 Context Assembly<br/>- Combine chunks<br/>- Add metadata<br/>- Format for GPT-4"]
+    J1 --> K1["🎯 Vector Search Only"]
+    J2 --> K2["🎯 Hybrid Search<br/>+ AI Reranking"]
+    J3 --> K3["🎯 Graph Traversal<br/>+ Multi-source Reasoning"]
     
-    M --> N["🤖 GPT-4 Response<br/>- Context-aware<br/>- Source citations<br/>- Structured output"]
+    G --> K1
+    G --> K2
+    G --> K3
+    KG2 --> K3
     
-    N --> O["📤 Response Delivery"]
+    K1 --> L1["📋 Vector Results"]
+    K2 --> L2["📋 Reranked Results"]
+    K3 --> L3["📋 Graph-Enhanced Results<br/>+ Relationship Context"]
+    
+    L1 --> M1["🧠 Basic Context Assembly"]
+    L2 --> M2["🧠 Advanced Context Assembly"]
+    L3 --> M3["🧠 Multi-source Context<br/>+ Knowledge Graph"]
+    
+    M1 --> N1["🤖 GPT-3.5 Response"]
+    M2 --> N2["🤖 GPT-4 Response"]
+    M3 --> N3["🤖 GPT-4 Multi-source<br/>Reasoning"]
+    
+    N1 --> O["📤 Response Delivery"]
+    N2 --> O
+    N3 --> O
     
     subgraph "🖥️ User Interfaces"
         P["🌐 Web Interface<br/>(index.html)"]
@@ -532,8 +750,8 @@ flowchart TD
     O --> R
     
     subgraph "📊 Monitoring & Logging"
-        S["📈 Query Statistics"]
-        T["🗃️ Query Logs"]
+        S["📈 Query Statistics<br/>+ KG Metrics"]
+        T["🗃️ Query Logs<br/>+ Strategy Used"]
         U["⚡ Health Checks"]
     end
     
@@ -554,73 +772,95 @@ flowchart TD
     classDef interface fill:#fce4ec
     classDef monitoring fill:#f1f8e9
     classDef tools fill:#fff8e1
+    classDef kg fill:#e8eaf6
     
     class A,H input
-    class B,C,D,E,F,I,J,K,L,M,N processing
+    class B,C,D,E,F,I,I1,J1,J2,J3,K1,K2,K3,L1,L2,L3,M1,M2,M3,N1,N2,N3 processing
     class G storage
+    class KG1,KG2 kg
     class O output
     class P,Q,R interface
     class S,T,U monitoring
     class V,W,X tools
 ```
 
-### **Complete User Query Data Flow**
+### **Three-Tier Query Processing Flow**
+
+#### **Query Example: "How do capability providers work with actors?"**
 
 ```
-User Query Journey: "How do I scale wasmCloud actors?"
+🎯 INTELLIGENT ROUTING (0-100ms)
+├── Query analysis: Contains relationship keywords
+├── Check KG availability: ✅ Knowledge Graph enabled
+└── Route decision: → Knowledge Graph Enhanced RAG
 
-1. CLIENT SIDE (0-50ms)
-   ├── User types question in web interface
-   ├── JavaScript validates input
-   ├── AJAX POST request to /query endpoint
-   └── UI shows loading indicator
+📊 BASIC RAG FLOW (2-4 seconds)
+└── Simple queries like "what is wash?"
+    ├── Vector search only (500ms)
+    ├── GPT-3.5 response (2-3s)
+    └── Cost: $0.02-0.03
 
-2. API GATEWAY (50-100ms)
-   ├── FastAPI receives request
-   ├── CORS validation
-   ├── Pydantic model validation
-   └── Route to query handler
+📊 ADVANCED RAG FLOW (4-8 seconds)  
+└── Complex queries like "how to deploy multiple actors?"
+    ├── Hybrid search + AI reranking (3-5s)
+    ├── GPT-4 response (2-3s)
+    └── Cost: $0.03-0.06
 
-3. CONFIGURATION CHECK (100-110ms)
-   ├── Load optimization config
-   ├── Determine RAG strategy (basic/advanced)
-   └── Route to appropriate pipeline
+🕸️ KNOWLEDGE GRAPH ENHANCED RAG FLOW (6-12 seconds)
+└── Relationship queries like "how do providers work with actors?"
+    ├── 1. HYBRID RETRIEVAL (1-3s)
+    │   ├── Vector similarity search
+    │   ├── Keyword search  
+    │   └── AI concept expansion
+    │
+    ├── 2. GRAPH CONTEXT RETRIEVAL (1-2s)
+    │   ├── Extract entities from query ("providers", "actors")
+    │   ├── Graph traversal (find: implements, provides, requires)
+    │   └── Retrieve relationship context
+    │
+    ├── 3. MULTI-SOURCE REASONING (3-6s)
+    │   ├── Combine text chunks + graph relationships
+    │   ├── GPT-4 enhanced reasoning
+    │   └── Generate comprehensive response
+    │
+    └── 4. ENHANCED RESPONSE (100-500ms)
+        ├── Include relationship insights
+        ├── Multiple source types
+        └── Cost: $0.05-0.12
+```
 
-4. ADVANCED RAG PIPELINE (110ms-8000ms)
-   ├── 4a. HYBRID SEARCH (110-3000ms)
-   │    ├── Vector Search (200-500ms)
-   │    │   ├── Generate query embedding [OpenAI API]
-   │    │   └── pgvector similarity search
-   │    ├── Keyword Search (50-200ms)
-   │    │   └── PostgreSQL full-text search
-   │    └── Concept Search (500-1500ms)
-   │        ├── AI concept expansion [OpenAI API]
-   │        └── Search for expanded concepts
-   │
-   ├── 4b. RESULT COMBINATION (3000-3050ms)
-   │    ├── Deduplicate results by chunk ID
-   │    └── Sort by relevance scores
-   │
-   ├── 4c. AI RERANKING (3050-5000ms)
-   │    ├── Prepare chunk summaries
-   │    ├── GPT-3.5 relevance evaluation [OpenAI API]
-   │    └── Reorder results optimally
-   │
-   └── 4d. RESPONSE GENERATION (5000-8000ms)
-        ├── Build enhanced context
-        ├── Generate GPT-4 response [OpenAI API]
-        └── Format with source citations
+### **Knowledge Graph Construction Pipeline**
 
-5. RESPONSE ASSEMBLY (8000-8050ms)
-   ├── Create response object
-   ├── Log query for analytics
-   └── Return JSON response
+```
+🔄 BACKGROUND EXTRACTION PROCESS (Continuous)
 
-6. CLIENT RENDERING (8050-8100ms)
-   ├── Receive JSON response
-   ├── Parse answer and sources
-   ├── Render markdown content
-   └── Display clickable source links
+📄 Document Chunks (234 total)
+├── Unprocessed chunks detected
+└── Batch processing (10 chunks at a time)
+
+🤖 GPT-4 TRIPLET EXTRACTION (Per chunk: 15-30s)
+├── Input: wasmCloud documentation chunk
+├── AI Analysis: Extract entities and relationships  
+├── Output: JSON triplets with confidence scores
+└── Example: {"subject": "actors", "predicate": "implements", "object": "interfaces", "confidence": 0.9}
+
+🧠 ENTITY NORMALIZATION & STORAGE
+├── Normalize entity names ("Actor" → "actor")
+├── Generate embeddings for semantic similarity
+├── Store in entities table with metadata
+└── Update frequency counts for relations
+
+🕸️ KNOWLEDGE GRAPH CONSTRUCTION
+├── Create bidirectional relationships
+├── Calculate confidence aggregations
+├── Build graph indexes for fast traversal
+└── Status: 80/234 chunks processed, 682 triplets extracted
+
+⚡ REAL-TIME GRAPH QUERIES (Per user query)
+├── Entity extraction from user query
+├── Graph traversal (BFS, depth=2)
+├── Relationship context retrieval
+└── Integration with traditional search results
 ```
 
 ### **Detailed Flow Steps**
@@ -846,8 +1086,9 @@ db.commit()
 
 ## 🗄️ **Database Design**
 
-### **Schema Overview**
+### **Enhanced Schema with Knowledge Graph**
 
+#### **Core Document Tables**
 ```sql
 -- Documents table
 CREATE TABLE documents (
@@ -859,31 +1100,103 @@ CREATE TABLE documents (
     scraped_at TIMESTAMP DEFAULT NOW()
 );
 
--- Chunks table with vector support
+-- Chunks table with vector support and KG processing status
 CREATE TABLE chunks (
     id SERIAL PRIMARY KEY,
     document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     chunk_index INTEGER NOT NULL,
     token_count INTEGER NOT NULL,
-    embedding VECTOR(1536) -- pgvector extension
+    embedding VECTOR(1536), -- pgvector extension
+    kg_processed BOOLEAN DEFAULT FALSE, -- Knowledge Graph processing status
+    kg_processed_at TIMESTAMP
+);
+```
+
+#### **Knowledge Graph Tables**
+```sql
+-- Entities table - wasmCloud concepts (actors, providers, interfaces, etc.)
+CREATE TABLE entities (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR NOT NULL,
+    entity_type VARCHAR NOT NULL, -- actor, provider, interface, capability, application
+    description TEXT,
+    embedding VECTOR(1536), -- Semantic representation for similarity
+    metadata JSONB, -- Additional properties
+    first_seen TIMESTAMP DEFAULT NOW(),
+    last_updated TIMESTAMP DEFAULT NOW(),
+    
+    UNIQUE(name, entity_type) -- Prevent duplicates
 );
 
--- Query logs for analytics
+-- Relations table - relationship types with frequency tracking
+CREATE TABLE relations (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR NOT NULL UNIQUE, -- implements, provides, requires, uses, contains, extends
+    description TEXT,
+    frequency INTEGER DEFAULT 1, -- How often this relation appears
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Triplets table - stores (subject, predicate, object) relationships
+CREATE TABLE triplets (
+    id SERIAL PRIMARY KEY,
+    subject_id INTEGER REFERENCES entities(id) ON DELETE CASCADE,
+    predicate_id INTEGER REFERENCES relations(id) ON DELETE CASCADE,
+    object_id INTEGER REFERENCES entities(id) ON DELETE CASCADE,
+    confidence FLOAT NOT NULL, -- AI confidence in this relationship (0.0-1.0)
+    source_chunk_id INTEGER REFERENCES chunks(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    
+    UNIQUE(subject_id, predicate_id, object_id) -- Prevent duplicate relationships
+);
+```
+
+#### **Enhanced Query Logs**
+```sql
+-- Query logs with Knowledge Graph tracking
 CREATE TABLE query_logs (
     id SERIAL PRIMARY KEY,
     query TEXT NOT NULL,
     response TEXT NOT NULL,
     chunks_used INTEGER,
+    triplets_used INTEGER DEFAULT 0, -- Number of KG relationships used
     response_time FLOAT,
+    search_strategy VARCHAR DEFAULT 'basic', -- basic, advanced, knowledge_graph
     created_at TIMESTAMP DEFAULT NOW()
 );
+```
 
--- Indexes for performance
+#### **Performance Indexes**
+```sql
+-- Core document indexes
 CREATE INDEX idx_chunks_document_id ON chunks(document_id);
 CREATE INDEX idx_chunks_embedding ON chunks USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX idx_chunks_kg_processed ON chunks(kg_processed) WHERE kg_processed = FALSE;
 CREATE INDEX idx_documents_url ON documents(url);
 CREATE INDEX idx_documents_content_hash ON documents(content_hash);
+
+-- Knowledge Graph indexes
+CREATE INDEX idx_entities_name ON entities(name);
+CREATE INDEX idx_entities_type ON entities(entity_type);
+CREATE INDEX idx_entities_embedding ON entities USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX idx_relations_name ON relations(name);
+CREATE INDEX idx_relations_frequency ON relations(frequency DESC);
+
+-- Triplet traversal indexes
+CREATE INDEX idx_triplets_subject ON triplets(subject_id);
+CREATE INDEX idx_triplets_object ON triplets(object_id);
+CREATE INDEX idx_triplets_predicate ON triplets(predicate_id);
+CREATE INDEX idx_triplets_confidence ON triplets(confidence DESC);
+CREATE INDEX idx_triplets_source_chunk ON triplets(source_chunk_id);
+
+-- Composite indexes for graph traversal
+CREATE INDEX idx_triplets_subject_confidence ON triplets(subject_id, confidence DESC);
+CREATE INDEX idx_triplets_object_confidence ON triplets(object_id, confidence DESC);
+
+-- Query analytics indexes
+CREATE INDEX idx_query_logs_strategy ON query_logs(search_strategy);
+CREATE INDEX idx_query_logs_created_at ON query_logs(created_at DESC);
 ```
 
 ### **Vector Search Optimization**
